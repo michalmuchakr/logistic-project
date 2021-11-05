@@ -7,12 +7,6 @@
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -24,15 +18,44 @@
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.cell {
+  position: relative;
+  padding-top: 41px !important;
+  border-width: 2px !important;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.cell-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  line-height: 2;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.col-form-label {
+  margin-bottom: 0;
+  font-size: 13px;
+  line-height: 29px;
+  text-transform: uppercase;
+  text-align: right;
+  padding: 0 10px 0 0 !important;
+}
+
+table {
+  border-spacing: 2px;
+  border-collapse: separate;
+}
+
+.table>:not(caption)>*>* {
+  border-bottom-width: inherit;
+}
+
+.title {
+  font-family: 'Ubuntu', sans-serif;
+}
+
+td.cell {
+  width: 25%;
 }
