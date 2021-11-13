@@ -1,13 +1,16 @@
 import {Table} from 'react-bootstrap';
 import {TableType} from '../types/common';
-import InitialValuesTableCell from './initial-values-table-cell';
+import ResultValuesTableCell from './result-values-table-cell';
 
-const InitialValuesTable = ({
+const ResultMatrixTable = ({
   tableData,
   onInputChange,
+  tableExtended,
 }: TableType): JSX.Element => {
   return (
-    <Table className="mt-4">
+    <Table
+      className={`table__unit-matrix mt-4${tableExtended && ' table-extended'}`}
+    >
       <tbody>
         {tableData &&
           tableData.map((rowItem, rowIdx) => (
@@ -19,11 +22,11 @@ const InitialValuesTable = ({
 
                   default:
                     return (
-                      <InitialValuesTableCell
+                      <ResultValuesTableCell
                         colIdx={colIdx}
                         onInputChange={onInputChange}
                         tdItem={tdItem}
-                        type={tdItem.type}
+                        cellType={tdItem.type}
                         rowIdx={rowIdx}
                         key={tdItem.id}
                       />
@@ -37,4 +40,4 @@ const InitialValuesTable = ({
   );
 };
 
-export default InitialValuesTable;
+export default ResultMatrixTable;

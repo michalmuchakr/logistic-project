@@ -1,6 +1,6 @@
 import './App.css';
-import MainScreen from "./components/main-screen";
-import {Col} from "react-bootstrap";
+import MainScreen from './components/main-screen';
+import {Col} from 'react-bootstrap';
 
 function App() {
   return (

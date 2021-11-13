@@ -21,7 +21,7 @@
 .cell {
   position: relative;
   padding-top: 41px !important;
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 .cell-title {
@@ -48,14 +48,51 @@ table {
   border-collapse: separate;
 }
 
-.table>:not(caption)>*>* {
+.table > :not(caption) > * > * {
   border-bottom-width: inherit;
 }
 
 .title {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 700;
 }
 
 td.cell {
   width: 25%;
+  font-family: 'Roboto Condensed', sans-serif;
+  vertical-align: middle;
+}
+
+.table__unit-matrix .cell.contain-name-cell {
+  position: static;
+  padding-top: 8px !important;
+  vertical-align: middle;
+}
+
+.table__unit-matrix .cell.contain-name-cell .cell-title {
+  position: static;
+  border-bottom: 0;
+}
+
+.table-extended td.cell {
+  width: 20%;
+}
+
+.col-form-label {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.input-group > .form-control {
+  border-top-left-radius: 5px !important;
+  border-bottom-left-radius: 5px !important;
+}
+
+.form-control[readonly],
+.input-group-text {
+  background-color: #fafafa;
+}
+
+.input-group:last-child {
+  margin-bottom: 0 !important;
 }
