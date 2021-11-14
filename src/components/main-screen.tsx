@@ -311,7 +311,6 @@ const MainScreen = () => {
 
     for (let i = sortedUniqueMatrix.length - 1; i >= 0; i-- ) {
       const { colIndex, rowIndex } = sortedUniqueMatrix[i];
-
       // @ts-ignore
       const tmpCustomer = redistributeResourcesUniqueMatrix[0][colIndex];
       // @ts-ignore
@@ -340,7 +339,8 @@ const MainScreen = () => {
 
   useEffect(() => {
     // recalculate matrix
-    updatedUniqueMatrix.current = calcUniqueMatrix();
+    // deep clone of matrix
+    updatedUniqueMatrix.current = JSON.parse(JSON.stringify(calcUniqueMatrix()));
 
     const flatUniqueMatrix = updatedUniqueMatrix.current.flat();
 
