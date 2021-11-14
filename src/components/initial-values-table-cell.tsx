@@ -81,9 +81,9 @@ const InitialValuesTableCell = ({
           tdItem={tdItem}
           onInputChange={onInputChange}
           suffixText={'j.m.'}
-          value={tdItem.transport}
+          value={tdItem.transportCost}
           data-id={tdItem.id}
-          dataPropertyName="transport"
+          dataPropertyName="transportCost"
         />
       )}
     </td>

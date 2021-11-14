@@ -12,9 +12,12 @@ export type MatrixTypeItem = {
   sale?: number;
   supply?: number;
   supplyLeft?: number;
-  transport?: number;
+  transportCost?: number;
+  resourcesTransferred?: number;
   uniqueProfit?: number;
   resultDelivery?: number;
+  colIndex?: number,
+  rowIndex?: number,
 };
 
 export type MatrixTypeRow = MatrixTypeItem[];

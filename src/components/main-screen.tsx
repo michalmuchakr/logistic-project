@@ -7,9 +7,7 @@ const MainScreen = () => {
   let tableExtended = useRef<boolean>(false);
   let updatedUniqueMatrix = useRef<MatrixType | []>([]);
 
-  const [uniqueProfitMatrixData, setUniqueProfitMatrixData] = useState<
-    MatrixType | []
-  >(() => []);
+  const [uniqueProfitMatrixData, setUniqueProfitMatrixData] = useState<MatrixType | []>(() => []);
 
   const [initialData, setInitialData] = useState<MatrixType>(() => [
     [
@@ -22,24 +20,30 @@ const MainScreen = () => {
         name: 'O1',
         purchase: 30,
         demand: 10,
-        demandLeft: 0,
+        demandLeft: 10,
         id: '0-1',
+        rowIndex: 0,
+        colIndex: 1
       },
       {
         type: 'customer',
         name: 'O2',
         purchase: 25,
         demand: 28,
-        demandLeft: 0,
+        demandLeft: 28,
         id: '0-2',
+        rowIndex: 0,
+        colIndex: 2
       },
       {
         type: 'customer',
         name: 'O3',
         purchase: 30,
         demand: 27,
-        demandLeft: 0,
+        demandLeft: 27,
         id: '0-3',
+        rowIndex: 0,
+        colIndex: 0
       },
     ],
     [
@@ -48,25 +52,37 @@ const MainScreen = () => {
         name: 'D1',
         sale: 10,
         supply: 20,
+        supplyLeft: 20,
         id: '1-0',
+        rowIndex: 1,
+        colIndex: 0
       },
       {
         type: 'delivery',
         name: 'D1 - O1',
-        transport: 8,
+        transportCost: 8,
+        resourcesTransferred: 0,
         id: '1-1',
+        rowIndex: 1,
+        colIndex: 1
       },
       {
         type: 'delivery',
         name: 'D1 - O2',
-        transport: 14,
+        transportCost: 14,
+        resourcesTransferred: 0,
         id: '1-2',
+        rowIndex: 1,
+        colIndex: 2
       },
       {
         type: 'delivery',
         name: 'D1 - O3',
-        transport: 17,
+        transportCost: 17,
+        resourcesTransferred: 0,
         id: '1-3',
+        rowIndex: 1,
+        colIndex: 3
       },
     ],
     [
@@ -75,26 +91,37 @@ const MainScreen = () => {
         name: 'D2',
         sale: 12,
         supply: 30,
-        supplyLeft: 0,
+        supplyLeft: 30,
         id: '2-0',
+        rowIndex: 2,
+        colIndex: 0
       },
       {
         type: 'delivery',
         name: 'D2 - O1',
-        transport: 12,
+        transportCost: 12,
+        resourcesTransferred: 0,
         id: '2-1',
+        rowIndex: 2,
+        colIndex: 1
       },
       {
         type: 'delivery',
         name: 'D2 - O2',
-        transport: 9,
+        transportCost: 9,
+        resourcesTransferred: 0,
         id: '2-2',
+        rowIndex: 2,
+        colIndex: 2
       },
       {
         type: 'delivery',
         name: 'D2 - O3',
-        transport: 19,
+        transportCost: 19,
+        resourcesTransferred: 0,
         id: '2-3',
+        rowIndex: 2,
+        colIndex: 3
       },
     ],
   ]);
@@ -110,6 +137,7 @@ const MainScreen = () => {
             return {
               ...element,
               [propertyName]: parseFloat(value),
+              [`${propertyName}Left`]: parseFloat(value),
             };
           }
 
@@ -143,10 +171,7 @@ const MainScreen = () => {
     }, 0);
   }
 
-  const addCustomerItemToRowEnd = (
-    rowItem: MatrixTypeRow,
-    rowIndex: number,
-  ): MatrixTypeRow => {
+  const addCustomerItemToRowEnd = (rowItem: MatrixTypeRow, rowIndex: number): MatrixTypeRow => {
     const demand: number = getFictionCustomerSupply();
 
     return [
@@ -162,27 +187,21 @@ const MainScreen = () => {
     ]
   };
 
-  const getDeliveryItem = (
-    columnNumber: number,
-    rowIndex: number,
-  ): MatrixTypeItem => ({
+  const getDeliveryItem = (columnIndex: number, rowIndex: number): MatrixTypeItem => ({
     type: 'delivery',
-    name: `D${rowIndex} - O${columnNumber}`,
-    transport: 0,
+    name: `D${rowIndex} - O${columnIndex}`,
+    transportCost: 0,
     uniqueProfit: 0,
     resultDelivery: 0,
-    id: `${rowIndex}-${columnNumber}`,
+    resourcesTransferred: 0,
+    id: `${rowIndex}-${columnIndex}`,
+    rowIndex: rowIndex,
+    colIndex: columnIndex
   });
 
-  const addDeliveryItemToRowEnd = (
-    rowItem: MatrixTypeRow,
-    rowIndex: number,
-  ): MatrixTypeRow => [...rowItem, getDeliveryItem(rowItem.length, rowIndex)];
+  const addDeliveryItemToRowEnd = (rowItem: MatrixTypeRow, rowIndex: number): MatrixTypeRow => [...rowItem, getDeliveryItem(rowItem.length, rowIndex)];
 
-  const getProviderItemToRow = (
-    colIndex: number,
-    rowIndex: number,
-  ): MatrixTypeItem => ({
+  const getProviderItemToRow = (colIndex: number, rowIndex: number): MatrixTypeItem => ({
     type: 'provider',
     name: `fikcyjny D${colIndex}`,
     sale: 0,
@@ -191,11 +210,7 @@ const MainScreen = () => {
     id: `${colIndex}-${rowIndex}`,
   });
 
-  const calcSingleUnitProfit = (
-    colIndex: number,
-    rowIndex: number,
-    inputMatrixData: MatrixType,
-  ) => {
+  const calcSingleUnitProfit = ( colIndex: number, rowIndex: number, inputMatrixData: MatrixType ) => {
     if (colIndex === inputMatrixData[0].length && tableExtended.current) {
       return 0;
     }
@@ -205,7 +220,7 @@ const MainScreen = () => {
       // @ts-ignore
       inputMatrixData[rowIndex][0]?.sale -
       // @ts-ignore
-      inputMatrixData[rowIndex][colIndex]?.transport
+      inputMatrixData[rowIndex][colIndex]?.transportCost
     );
   };
 
@@ -259,9 +274,7 @@ const MainScreen = () => {
     });
   }, []);
 
-  const additionalProviderCustomerNeeded = (
-    dataMatrix: MatrixType,
-  ): boolean => {
+  const additionalProviderCustomerNeeded = (dataMatrix: MatrixType): boolean => {
     let providerSupplySum: number = 0;
     let customerDemandSum: number = 0;
 
@@ -280,22 +293,82 @@ const MainScreen = () => {
     return customerDemandSum !== providerSupplySum;
   };
 
-  useEffect(() => {
-    const shouldExtendTable = additionalProviderCustomerNeeded(initialData);
-    updatedUniqueMatrix.current = calcUniqueMatrix();
-    setUniqueProfitMatrixData(updatedUniqueMatrix.current);
+  const sortUniqueMatrix = (flatUniqueMatrix: MatrixTypeRow): MatrixTypeRow => {
+    const deliveryFlatUniqueMatrix = flatUniqueMatrix.filter((UniqueMatrixElement: MatrixTypeItem) => {
+      return UniqueMatrixElement.type === "delivery";
+    })
 
+    deliveryFlatUniqueMatrix.sort((prevMatrixItem, nextMatrixItem) => {
+      // @ts-ignore
+      return prevMatrixItem.uniqueProfit - nextMatrixItem.uniqueProfit;
+    })
+
+    return deliveryFlatUniqueMatrix;
+  }
+
+  const redistributeResources = (sortedUniqueMatrix: MatrixTypeRow): MatrixType => {
+    const redistributeResourcesUniqueMatrix = Object.assign([], updatedUniqueMatrix.current);
+
+    for (let i = sortedUniqueMatrix.length - 1; i >= 0; i-- ) {
+      const { colIndex, rowIndex } = sortedUniqueMatrix[i];
+
+      // @ts-ignore
+      const tmpCustomer = redistributeResourcesUniqueMatrix[0][colIndex];
+      // @ts-ignore
+      const tmpProvider = redistributeResourcesUniqueMatrix[rowIndex][0];
+      const transferPossible = tmpCustomer.demandLeft > 0 && tmpProvider.supplyLeft > 0;
+      let resourcesTransferred = 0;
+
+      if (transferPossible && tmpProvider.supplyLeft > tmpCustomer.demandLeft) {
+        resourcesTransferred = tmpCustomer.demandLeft;
+        tmpProvider.supplyLeft -= tmpCustomer.demandLeft;
+        tmpCustomer.demandLeft = 0;
+
+      } else if (transferPossible && tmpProvider.supplyLeft < tmpCustomer.demandLeft) {
+        resourcesTransferred = tmpProvider.supplyLeft;
+        tmpCustomer.demandLeft -= tmpProvider.supplyLeft;
+        tmpProvider.supplyLeft = 0;
+      }
+
+      // update resources transferred for related delivery cell
+      // @ts-ignore
+      updatedUniqueMatrix.current[rowIndex][colIndex].resourcesTransferred = resourcesTransferred;
+    }
+
+    return redistributeResourcesUniqueMatrix;
+  }
+
+  useEffect(() => {
+    // recalculate matrix
+    updatedUniqueMatrix.current = calcUniqueMatrix();
+
+    const flatUniqueMatrix = updatedUniqueMatrix.current.flat();
+
+    // calculate resources to be transferred on each track
+    let sortedUniqueMatrix = sortUniqueMatrix(flatUniqueMatrix);
+    updatedUniqueMatrix.current = redistributeResources(sortedUniqueMatrix);
+
+    // extend matrix if needed
+    const shouldExtendTable = additionalProviderCustomerNeeded(initialData);
     if (shouldExtendTable) {
       updatedUniqueMatrix.current = addColumnToMatrix();
       updatedUniqueMatrix.current = [
         ...updatedUniqueMatrix.current,
         addRowToMatrix(),
       ];
-      setUniqueProfitMatrixData(updatedUniqueMatrix.current);
       tableExtended.current = true;
+
+      // TODO calculation for fictional delivery and customer guys
+
     } else {
       tableExtended.current = false;
     }
+
+
+
+
+    setUniqueProfitMatrixData(updatedUniqueMatrix.current);
+
   }, [addColumnToMatrix, addRowToMatrix, calcUniqueMatrix, initialData]);
 
   return (
