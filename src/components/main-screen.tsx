@@ -1,11 +1,11 @@
 import {useState, useEffect, useCallback, ChangeEvent, useRef} from 'react';
-import {MatrixType, MatrixTypeItem, MatrixTypeRow} from '../types/common';
+import {CellType, MatrixType, MatrixTypeItem, MatrixTypeRow} from '../types/common';
 import InitialValuesTable from './initial-values-table';
 import ResutlMatrixTable from './result-matrix-table';
 
 const MainScreen = () => {
-  let tableExtended = useRef<boolean>(false);
-  let updatedUniqueMatrix = useRef<MatrixType | []>([]);
+  let isTableExtended = useRef<boolean>(false);
+  let resultMatrix = useRef<MatrixType | []>([]);
 
   const [uniqueProfitMatrixData, setUniqueProfitMatrixData] = useState<MatrixType | []>(() => []);
 
@@ -43,7 +43,7 @@ const MainScreen = () => {
         demandLeft: 27,
         id: '0-3',
         rowIndex: 0,
-        colIndex: 0
+        colIndex: 3
       },
     ],
     [
@@ -183,6 +183,8 @@ const MainScreen = () => {
         demand,
         demandLeft: demand,
         id: `${rowIndex}-${rowItem.length}`,
+        rowIndex,
+        colIndex: rowItem.length
       },
     ]
   };
@@ -211,7 +213,7 @@ const MainScreen = () => {
   });
 
   const calcSingleUnitProfit = ( colIndex: number, rowIndex: number, inputMatrixData: MatrixType ) => {
-    if (colIndex === inputMatrixData[0].length && tableExtended.current) {
+    if (colIndex === inputMatrixData[0].length && isTableExtended.current) {
       return 0;
     }
     return (
@@ -250,7 +252,7 @@ const MainScreen = () => {
   }, [initialData]);
 
   const addColumnToMatrix = useCallback(() => {
-    return updatedUniqueMatrix.current.map((rowItem, rowIndex) => {
+    return resultMatrix.current.map((rowItem, rowIndex) => {
       if (rowIndex === 0) {
         return addCustomerItemToRowEnd(rowItem, rowIndex);
       } else {
@@ -260,12 +262,12 @@ const MainScreen = () => {
   }, []);
 
   const addRowToMatrix = useCallback(() => {
-    return updatedUniqueMatrix.current[
-      updatedUniqueMatrix.current.length - 1
+    return resultMatrix.current[
+      resultMatrix.current.length - 1
     ].map((matrixItem, rowIndex) => {
       if (rowIndex === 0) {
         return getProviderItemToRow(
-          updatedUniqueMatrix.current.length,
+          resultMatrix.current.length,
           rowIndex,
         );
       } else {
@@ -307,7 +309,7 @@ const MainScreen = () => {
   }
 
   const redistributeResources = (sortedUniqueMatrix: MatrixTypeRow): MatrixType => {
-    const redistributeResourcesUniqueMatrix = Object.assign([], updatedUniqueMatrix.current);
+    const redistributeResourcesUniqueMatrix = Object.assign([], resultMatrix.current);
 
     for (let i = sortedUniqueMatrix.length - 1; i >= 0; i-- ) {
       const { colIndex, rowIndex } = sortedUniqueMatrix[i];
@@ -331,43 +333,126 @@ const MainScreen = () => {
 
       // update resources transferred for related delivery cell
       // @ts-ignore
-      updatedUniqueMatrix.current[rowIndex][colIndex].resourcesTransferred = resourcesTransferred;
+      resultMatrix.current[rowIndex][colIndex].resourcesTransferred = resourcesTransferred;
     }
 
     return redistributeResourcesUniqueMatrix;
   }
 
+  const calculateRedistributionFictionalMembers = (updatedUniqueMatrix: MatrixType) => {
+    const updatedUniqueMatrixTmp = Object.assign([], updatedUniqueMatrix);
+
+    for (const updatedUniqueMatrixRow of updatedUniqueMatrix) {
+      for (const updatedUniqueMatrixItem of updatedUniqueMatrixRow) {
+        const { colIndex } = updatedUniqueMatrixItem;
+
+        // // non zero customer demandLeft
+        if (updatedUniqueMatrixItem.type === "customer" && updatedUniqueMatrixItem.demandLeft !== 0) {
+          // update provider
+          // @ts-ignore
+          updatedUniqueMatrixTmp[updatedUniqueMatrix.length - 1][colIndex].resourcesTransferred = updatedUniqueMatrixItem.demandLeft;
+          updatedUniqueMatrixItem.demandLeft = 0;
+        }
+
+        // non zero provider demandLeft
+        if (updatedUniqueMatrixItem.type === "provider" && updatedUniqueMatrixItem.supplyLeft !== 0) {
+          // @ts-ignore
+          // updatedUniqueMatrixTmp[rowIndex][colIndex] = updatedUniqueMatrixItem.demandLeft;
+          // updatedUniqueMatrixItem.demandLeft = 0;
+        }
+      }
+    }
+
+    return updatedUniqueMatrixTmp;
+  }
+
+  const createPresentationalAlfaBetaCell = (type: CellType, id: string): MatrixTypeItem => (
+  {
+    type,
+    id,
+  })
+
+  const createCommonAlfaBetaCell = (type: CellType, id: string, value: number): MatrixTypeItem => ({
+    type,
+    id,
+    value
+  })
+
+  const addAlphaColumnToMatrix = (resultMatrixShallowCopy: MatrixType): MatrixType => {
+    // add alpha
+    // @ts-ignore
+    return resultMatrixShallowCopy.map((tmpUpdatedUniqueMatrixRow, tmpUpdatedUniqueMatrixRowIndex) => {
+      if (tmpUpdatedUniqueMatrixRowIndex !== 0) {
+        return ([
+          ...tmpUpdatedUniqueMatrixRow,
+          createCommonAlfaBetaCell('alpha', `alpha-${tmpUpdatedUniqueMatrixRowIndex}`, 0)
+        ])
+      } else if (tmpUpdatedUniqueMatrixRowIndex !== resultMatrixShallowCopy.length - 1) {
+        return ([
+          ...tmpUpdatedUniqueMatrixRow,
+          createPresentationalAlfaBetaCell('presentation-alpha', 'alpha-0')
+        ])
+      }
+    });
+  }
+
+  const addBetaColumnToMatrix = (resultMatrixShallowCopy: MatrixType): MatrixType => {
+
+    const resultMatrixShallowCopyShallowArray = [...resultMatrixShallowCopy];
+    const betaRow: MatrixTypeRow = [];
+
+    for (let i=0; i < resultMatrixShallowCopy[0].length; i++) {
+      if (i === 0) {
+        betaRow[i] = createPresentationalAlfaBetaCell('presentation-beta', 'beta-0');
+      } else {
+        betaRow[i] = createCommonAlfaBetaCell('beta', `beta-${i}`, 0)
+      }
+    }
+    resultMatrixShallowCopyShallowArray.push(betaRow);
+
+    return resultMatrixShallowCopyShallowArray;
+  }
+
+  const addAlphaAndBetaParamsToMatrix = (resultMatrix: MatrixType): MatrixType => {
+    let resultMatrixShallowCopy = [...resultMatrix];
+
+    resultMatrixShallowCopy = addAlphaColumnToMatrix(resultMatrixShallowCopy);
+    resultMatrixShallowCopy = addBetaColumnToMatrix(resultMatrixShallowCopy);
+
+    return resultMatrixShallowCopy;
+  }
+
   useEffect(() => {
     // recalculate matrix
     // deep clone of matrix
-    updatedUniqueMatrix.current = JSON.parse(JSON.stringify(calcUniqueMatrix()));
+    resultMatrix.current = JSON.parse(JSON.stringify(calcUniqueMatrix()));
 
-    const flatUniqueMatrix = updatedUniqueMatrix.current.flat();
+    const flatUniqueMatrix = resultMatrix.current.flat();
 
     // calculate resources to be transferred on each track
     let sortedUniqueMatrix = sortUniqueMatrix(flatUniqueMatrix);
-    updatedUniqueMatrix.current = redistributeResources(sortedUniqueMatrix);
+    resultMatrix.current = redistributeResources(sortedUniqueMatrix);
 
     // extend matrix if needed
     const shouldExtendTable = additionalProviderCustomerNeeded(initialData);
+
     if (shouldExtendTable) {
-      updatedUniqueMatrix.current = addColumnToMatrix();
-      updatedUniqueMatrix.current = [
-        ...updatedUniqueMatrix.current,
+      resultMatrix.current = addColumnToMatrix();
+      resultMatrix.current = [
+        ...resultMatrix.current,
         addRowToMatrix(),
       ];
-      tableExtended.current = true;
+      isTableExtended.current = true;
 
-      // TODO calculation for fictional delivery and customer guys
+      resultMatrix.current = calculateRedistributionFictionalMembers(resultMatrix.current);
 
     } else {
-      tableExtended.current = false;
+      isTableExtended.current = false;
     }
 
+    resultMatrix.current = addAlphaAndBetaParamsToMatrix(resultMatrix.current);
 
-
-
-    setUniqueProfitMatrixData(updatedUniqueMatrix.current);
+    setUniqueProfitMatrixData(resultMatrix.current);
 
   }, [addColumnToMatrix, addRowToMatrix, calcUniqueMatrix, initialData]);
 
@@ -377,13 +462,13 @@ const MainScreen = () => {
       <InitialValuesTable
         tableData={initialData}
         onInputChange={onInputChange}
-        tableExtended={tableExtended.current}
+        tableExtended={isTableExtended.current}
       />
       <h3 className="title mt-5mb-1">Macierz zysków jednostkowych</h3>
       <ResutlMatrixTable
         onInputChange={onInputChange}
         tableData={uniqueProfitMatrixData}
-        tableExtended={tableExtended.current}
+        tableExtended={isTableExtended.current}
       />
     </>
   );

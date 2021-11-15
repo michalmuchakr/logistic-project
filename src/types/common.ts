@@ -1,6 +1,6 @@
 import {ChangeEvent} from 'react';
 
-export type CellType = 'presentation' | 'customer' | 'provider' | 'delivery';
+export type CellType = 'presentation' | 'customer' | 'provider' | 'delivery' | 'alpha' | 'beta' | 'presentation-alpha' | 'presentation-beta';
 
 export type MatrixTypeItem = {
   type: CellType;
@@ -18,6 +18,8 @@ export type MatrixTypeItem = {
   resultDelivery?: number;
   colIndex?: number,
   rowIndex?: number,
+  alphaValue?: number,
+  value?: number
 };
 
 export type MatrixTypeRow = MatrixTypeItem[];

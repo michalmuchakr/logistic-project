@@ -30,7 +30,7 @@ const ResultValuesTableCell = ({
       {cellType === 'delivery' && (
         <>
           <TableInputGroup
-              inputLabel="Dostawa"
+              inputLabel="Zysk / j"
               rowIdx={rowIdx}
               tdItem={tdItem}
               onInputChange={onInputChange}
