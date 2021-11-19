@@ -67,6 +67,7 @@ td.cell {
   position: static;
   padding-top: 8px !important;
   vertical-align: middle;
+  min-width: 50px;
 }
 
 .table__unit-matrix .cell.contain-name-cell .cell-title {

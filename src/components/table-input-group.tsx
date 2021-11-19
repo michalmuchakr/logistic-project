@@ -9,7 +9,7 @@ type TableInputGroupType = {
   tdItem: MatrixTypeItem;
   onInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
   suffixText: string;
-  value?: number;
+  value?: number | 'X';
   labelWidth?: number;
   readOnly?: boolean;
 };

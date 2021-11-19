@@ -9,6 +9,8 @@ export type MatrixTypeItem = {
   purchase?: number;
   demand?: number;
   demandLeft?: number;
+  deltaValue?: number | 'X';
+  dualParamValue?: number;
   sale?: number;
   supply?: number;
   supplyLeft?: number;
@@ -19,7 +21,7 @@ export type MatrixTypeItem = {
   colIndex?: number,
   rowIndex?: number,
   alphaValue?: number,
-  value?: number
+  isDualParamCalculated?: boolean
 };
 
 export type MatrixTypeRow = MatrixTypeItem[];

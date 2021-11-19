@@ -64,7 +64,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '1-1',
         rowIndex: 1,
-        colIndex: 1
+        colIndex: 1,
+        deltaValue: 'X'
       },
       {
         type: 'delivery',
@@ -73,7 +74,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '1-2',
         rowIndex: 1,
-        colIndex: 2
+        colIndex: 2,
+        deltaValue: 'X'
       },
       {
         type: 'delivery',
@@ -82,7 +84,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '1-3',
         rowIndex: 1,
-        colIndex: 3
+        colIndex: 3,
+        deltaValue: 'X'
       },
     ],
     [
@@ -103,7 +106,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '2-1',
         rowIndex: 2,
-        colIndex: 1
+        colIndex: 1,
+        deltaValue: 'X'
       },
       {
         type: 'delivery',
@@ -112,7 +116,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '2-2',
         rowIndex: 2,
-        colIndex: 2
+        colIndex: 2,
+        deltaValue: 'X'
       },
       {
         type: 'delivery',
@@ -121,7 +126,8 @@ const MainScreen = () => {
         resourcesTransferred: 0,
         id: '2-3',
         rowIndex: 2,
-        colIndex: 3
+        colIndex: 3,
+        deltaValue: 'X'
       },
     ],
   ]);
@@ -189,19 +195,25 @@ const MainScreen = () => {
     ]
   };
 
-  const getDeliveryItem = (columnIndex: number, rowIndex: number): MatrixTypeItem => ({
-    type: 'delivery',
-    name: `D${rowIndex} - O${columnIndex}`,
-    transportCost: 0,
-    uniqueProfit: 0,
-    resultDelivery: 0,
-    resourcesTransferred: 0,
-    id: `${rowIndex}-${columnIndex}`,
-    rowIndex: rowIndex,
-    colIndex: columnIndex
-  });
+  const getDeliveryItem = (rowIndex: number, columnIndex: number): MatrixTypeItem =>
+  {
+    return ({
+      type: 'delivery',
+      name: `D${rowIndex} - O${columnIndex}`,
+      transportCost: 0,
+      uniqueProfit: 0,
+      resultDelivery: 0,
+      resourcesTransferred: 0,
+      id: `${rowIndex}-${columnIndex}`,
+      rowIndex: rowIndex,
+      colIndex: columnIndex,
+      deltaValue: 'X'
+    });
+  }
 
-  const addDeliveryItemToRowEnd = (rowItem: MatrixTypeRow, rowIndex: number): MatrixTypeRow => [...rowItem, getDeliveryItem(rowItem.length, rowIndex)];
+  const addDeliveryItemToRowEnd = (rowCellItem: MatrixTypeRow, rowIndex: number): MatrixTypeRow => {
+    return [...rowCellItem, getDeliveryItem(rowIndex, rowCellItem.length)]
+  };
 
   const getProviderItemToRow = (colIndex: number, rowIndex: number): MatrixTypeItem => ({
     type: 'provider',
@@ -212,7 +224,7 @@ const MainScreen = () => {
     id: `${colIndex}-${rowIndex}`,
   });
 
-  const calcSingleUnitProfit = ( colIndex: number, rowIndex: number, inputMatrixData: MatrixType ) => {
+  const calcSingleUnitProfit = (colIndex: number, rowIndex: number, inputMatrixData: MatrixType) => {
     if (colIndex === inputMatrixData[0].length && isTableExtended.current) {
       return 0;
     }
@@ -252,26 +264,27 @@ const MainScreen = () => {
   }, [initialData]);
 
   const addColumnToMatrix = useCallback(() => {
-    return resultMatrix.current.map((rowItem, rowIndex) => {
+    return resultMatrix.current.map((rowCellItem, rowIndex) => {
       if (rowIndex === 0) {
-        return addCustomerItemToRowEnd(rowItem, rowIndex);
+        return addCustomerItemToRowEnd(rowCellItem, rowIndex);
       } else {
-        return addDeliveryItemToRowEnd(rowItem, rowIndex);
+        return addDeliveryItemToRowEnd(rowCellItem, rowIndex);
       }
     });
   }, []);
 
   const addRowToMatrix = useCallback(() => {
-    return resultMatrix.current[
-      resultMatrix.current.length - 1
-    ].map((matrixItem, rowIndex) => {
-      if (rowIndex === 0) {
+    const rowIndexOfRowAdded = resultMatrix.current.length;
+    return resultMatrix
+        .current[rowIndexOfRowAdded - 1]
+        .map((matrixItem, columnIndex) => {
+      if (columnIndex === 0) {
         return getProviderItemToRow(
-          resultMatrix.current.length,
-          rowIndex,
+          rowIndexOfRowAdded,
+          columnIndex,
         );
       } else {
-        return getDeliveryItem(12345, rowIndex);
+        return getDeliveryItem(rowIndexOfRowAdded, columnIndex);
       }
     });
   }, []);
@@ -295,7 +308,7 @@ const MainScreen = () => {
     return customerDemandSum !== providerSupplySum;
   };
 
-  const sortUniqueMatrix = (flatUniqueMatrix: MatrixTypeRow): MatrixTypeRow => {
+  const sortFlatSolutionMatrix = (flatUniqueMatrix: MatrixTypeRow): MatrixTypeRow => {
     const deliveryFlatUniqueMatrix = flatUniqueMatrix.filter((UniqueMatrixElement: MatrixTypeItem) => {
       return UniqueMatrixElement.type === "delivery";
     })
@@ -309,14 +322,15 @@ const MainScreen = () => {
   }
 
   const redistributeResources = (sortedUniqueMatrix: MatrixTypeRow): MatrixType => {
-    const redistributeResourcesUniqueMatrix = Object.assign([], resultMatrix.current);
+    const redistributeResourcesUniqueMatrixShallowCopy = [...resultMatrix.current];
+    // const flatSolutionMatrixShallowCopy = [...flatSolutionMatrix];
 
-    for (let i = sortedUniqueMatrix.length - 1; i >= 0; i-- ) {
+    for (let i = sortedUniqueMatrix.length - 1; i >= 0; i--) {
       const { colIndex, rowIndex } = sortedUniqueMatrix[i];
       // @ts-ignore
-      const tmpCustomer = redistributeResourcesUniqueMatrix[0][colIndex];
+      const tmpCustomer = redistributeResourcesUniqueMatrixShallowCopy[0][colIndex];
       // @ts-ignore
-      const tmpProvider = redistributeResourcesUniqueMatrix[rowIndex][0];
+      const tmpProvider = redistributeResourcesUniqueMatrixShallowCopy[rowIndex][0];
       const transferPossible = tmpCustomer.demandLeft > 0 && tmpProvider.supplyLeft > 0;
       let resourcesTransferred = 0;
 
@@ -336,46 +350,64 @@ const MainScreen = () => {
       resultMatrix.current[rowIndex][colIndex].resourcesTransferred = resourcesTransferred;
     }
 
-    return redistributeResourcesUniqueMatrix;
+    return redistributeResourcesUniqueMatrixShallowCopy;
   }
 
-  const calculateRedistributionFictionalMembers = (updatedUniqueMatrix: MatrixType) => {
-    const updatedUniqueMatrixTmp = Object.assign([], updatedUniqueMatrix);
+  const calculateRedistributionFictionalMembers = (updatedResultMatrix: MatrixType, sortedUniqueFlatMatrixCopyOnlyActiveTracks: MatrixTypeRow) => {
+    const updatedResultMatrixShallowCopy = Object.assign([], updatedResultMatrix);
+    let sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy = [...sortedUniqueFlatMatrixCopyOnlyActiveTracks];
 
-    for (const updatedUniqueMatrixRow of updatedUniqueMatrix) {
-      for (const updatedUniqueMatrixItem of updatedUniqueMatrixRow) {
-        const { colIndex } = updatedUniqueMatrixItem;
+    for (const updatedResultMatrixRow of updatedResultMatrix) {
+      for (const updatedResultMatrixItem of updatedResultMatrixRow) {
+        const { colIndex, rowIndex } = updatedResultMatrixItem;
 
-        // // non zero customer demandLeft
-        if (updatedUniqueMatrixItem.type === "customer" && updatedUniqueMatrixItem.demandLeft !== 0) {
+        // non zero customer demandLeft
+        if (updatedResultMatrixItem.type === "customer" && updatedResultMatrixItem.demandLeft !== 0) {
           // update provider
           // @ts-ignore
-          updatedUniqueMatrixTmp[updatedUniqueMatrix.length - 1][colIndex].resourcesTransferred = updatedUniqueMatrixItem.demandLeft;
-          updatedUniqueMatrixItem.demandLeft = 0;
+          updatedResultMatrixShallowCopy[updatedResultMatrix.length - 1][colIndex].resourcesTransferred = updatedResultMatrixItem.demandLeft;
+          updatedResultMatrixItem.demandLeft = 0;
+
+          // push delivery where we transfer stuff
+          sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy = [
+            // @ts-ignore
+            updatedResultMatrixShallowCopy[updatedResultMatrix.length - 1][colIndex],
+            ...sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy
+          ]
         }
 
-        // non zero provider demandLeft
-        if (updatedUniqueMatrixItem.type === "provider" && updatedUniqueMatrixItem.supplyLeft !== 0) {
+        // non zero provider supplyLeft
+        if (updatedResultMatrixItem.type === "provider" && updatedResultMatrixItem.supplyLeft !== 0) {
           // @ts-ignore
-          // updatedUniqueMatrixTmp[rowIndex][colIndex] = updatedUniqueMatrixItem.demandLeft;
-          // updatedUniqueMatrixItem.demandLeft = 0;
+          updatedResultMatrixShallowCopy[rowIndex][updatedResultMatrixRow.length - 1].resourcesTransferred = updatedResultMatrixItem.supplyLeft;
+          updatedResultMatrixItem.supplyLeft = 0;
+
+          // push delivery where we transfer stuff
+          sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy = [
+            // @ts-ignore
+            updatedResultMatrixShallowCopy[rowIndex][updatedResultMatrixRow.length - 1],
+            ...sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy,
+          ]
         }
       }
     }
 
-    return updatedUniqueMatrixTmp;
+    return {
+      updatedResultMatrixShallowCopy,
+      sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy
+    };
   }
 
-  const createPresentationalAlfaBetaCell = (type: CellType, id: string): MatrixTypeItem => (
-  {
+  const createPresentationalAlfaBetaCell = (type: CellType, id: string): MatrixTypeItem => ({
     type,
     id,
   })
 
-  const createCommonAlfaBetaCell = (type: CellType, id: string, value: number): MatrixTypeItem => ({
+  const createCommonAlfaBetaCell = (type: CellType, id: string, dualParamValue: number): MatrixTypeItem => ({
     type,
     id,
-    value
+    dualParamValue,
+    isDualParamCalculated: false
   })
 
   const addAlphaColumnToMatrix = (resultMatrixShallowCopy: MatrixType): MatrixType => {
@@ -422,16 +454,109 @@ const MainScreen = () => {
     return resultMatrixShallowCopy;
   }
 
+  const calcAlphaBeta = (resultMatrix: MatrixType, sortedFlatSolutionMatrix: MatrixTypeRow): MatrixType => {
+    let resultMatrixShallowCopy = [...resultMatrix];
+    let sortedUniqueFlatMatrixCopy = [...sortedFlatSolutionMatrix];
+
+    const fRowIndex = resultMatrixShallowCopy.length - 1;
+    const fColIndex = resultMatrixShallowCopy[0].length - 1;
+
+    // alfa F = 0
+    resultMatrixShallowCopy[fRowIndex][fColIndex] = {
+      ...resultMatrixShallowCopy[fRowIndex][fColIndex],
+      dualParamValue: 0,
+      isDualParamCalculated: true
+    };
+
+    for (const sortedUniqueFlatMatrixCopyItem of sortedUniqueFlatMatrixCopy) {
+      const {rowIndex, colIndex} = sortedUniqueFlatMatrixCopyItem;
+
+      // @ts-ignore
+      const isParticularBetaCalculated: boolean = resultMatrixShallowCopy[fRowIndex][colIndex].isDualParamCalculated;
+      // @ts-ignore
+      const {uniqueProfit: resultMatrixShallowCopyItemUniqueProfit} = resultMatrixShallowCopy[rowIndex][colIndex];
+
+      // Zij - alfa [i] - beta [j] = 0
+      if (isParticularBetaCalculated) {
+        // calculate alfa
+        // alfa [ cell_row ][fColIndex] = Zij - beta [fRowIndex][j]
+
+        // @ts-ignore
+        resultMatrixShallowCopy[rowIndex][fColIndex] = {
+          // @ts-ignore
+          ...resultMatrixShallowCopy[rowIndex][fColIndex],
+          // @ts-ignore
+          dualParamValue: resultMatrixShallowCopyItemUniqueProfit - resultMatrixShallowCopy[fRowIndex][colIndex].dualParamValue,
+          isDualParamCalculated: true
+        };
+
+      } else {
+        // calculate beta
+        // beta [fRowIndex][j] = Zij - alfa [ cell_row ][fColIndex]
+
+        // @ts-ignore
+        resultMatrixShallowCopy[fRowIndex][colIndex] = {
+          // @ts-ignore
+          ...resultMatrixShallowCopy[fRowIndex][colIndex],
+          // @ts-ignore
+          dualParamValue: resultMatrixShallowCopyItemUniqueProfit - resultMatrixShallowCopy[rowIndex][fColIndex].dualParamValue,
+          isDualParamCalculated: true
+        };
+      }
+
+    }
+
+    return resultMatrixShallowCopy;
+  }
+
+  const calculateDeltaParams = (resultMatrix: MatrixType): MatrixType => {
+    let resultMatrixShallowCopy = [...resultMatrix];
+
+    let resultMatrixShallowCopyFlat = resultMatrixShallowCopy.flat();
+
+    let filteredFlatResult = resultMatrixShallowCopyFlat.filter((resultMatrixShallowCopyFlatCell) => {
+      if (resultMatrixShallowCopyFlatCell.type === 'delivery') {
+        return resultMatrixShallowCopyFlatCell.resourcesTransferred === 0;
+      }
+      return false;
+    })
+
+    console.log(filteredFlatResult);
+
+    for (const filteredFlatResultItem of filteredFlatResult) {
+      const { rowIndex: cellRowIndex, colIndex: cellColumnIndex, uniqueProfit } = filteredFlatResultItem;
+      // @ts-ignore
+      const alphaColumnIndex = resultMatrixShallowCopy[0].length - 1;
+      const betaRowIndex = resultMatrixShallowCopy.length - 1;
+      // @ts-ignore
+      const alpha = resultMatrixShallowCopy[cellRowIndex][alphaColumnIndex].dualParamValue;
+      // @ts-ignore
+      const beta = resultMatrixShallowCopy[betaRowIndex][cellColumnIndex].dualParamValue;
+
+      // delta = Z[cellRowIndex][columnIndex] - a [cellRowIndex] - B [columnIndex]
+
+      // @ts-ignore
+      resultMatrixShallowCopy[cellRowIndex][cellColumnIndex].deltaValue = uniqueProfit - alpha - beta;
+    }
+
+    return resultMatrixShallowCopy;
+  }
+
   useEffect(() => {
     // recalculate matrix
     // deep clone of matrix
     resultMatrix.current = JSON.parse(JSON.stringify(calcUniqueMatrix()));
 
-    const flatUniqueMatrix = resultMatrix.current.flat();
+    let flatSolutionMatrix: MatrixTypeRow = resultMatrix.current.flat();
 
     // calculate resources to be transferred on each track
-    let sortedUniqueMatrix = sortUniqueMatrix(flatUniqueMatrix);
-    resultMatrix.current = redistributeResources(sortedUniqueMatrix);
+    let sortedFlatSolutionMatrix = sortFlatSolutionMatrix(flatSolutionMatrix);
+    resultMatrix.current = redistributeResources(sortedFlatSolutionMatrix);
+
+    let sortedUniqueFlatMatrixCopyOnlyActiveTracks = sortedFlatSolutionMatrix.filter((sortedFlatSolutionMatrixCopyItem) => {
+      // @ts-ignore
+      return sortedFlatSolutionMatrixCopyItem.resourcesTransferred > 0;
+    })
 
     // extend matrix if needed
     const shouldExtendTable = additionalProviderCustomerNeeded(initialData);
@@ -444,13 +569,19 @@ const MainScreen = () => {
       ];
       isTableExtended.current = true;
 
-      resultMatrix.current = calculateRedistributionFictionalMembers(resultMatrix.current);
+      const calculateRedistributionFictionalMembersObject = calculateRedistributionFictionalMembers(resultMatrix.current, sortedUniqueFlatMatrixCopyOnlyActiveTracks);
+      const { updatedResultMatrixShallowCopy, sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy } = calculateRedistributionFictionalMembersObject;
 
+      resultMatrix.current = updatedResultMatrixShallowCopy;
+      sortedFlatSolutionMatrix = sortedUniqueFlatMatrixCopyOnlyActiveTracksShallowCopy;
     } else {
       isTableExtended.current = false;
     }
 
     resultMatrix.current = addAlphaAndBetaParamsToMatrix(resultMatrix.current);
+    resultMatrix.current = calcAlphaBeta(resultMatrix.current, sortedFlatSolutionMatrix);
+
+    resultMatrix.current = calculateDeltaParams(resultMatrix.current);
 
     setUniqueProfitMatrixData(resultMatrix.current);
 
