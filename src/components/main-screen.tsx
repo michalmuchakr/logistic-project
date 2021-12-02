@@ -1,7 +1,8 @@
-import {useState, useEffect, useCallback, ChangeEvent, useRef} from 'react';
+import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {CellType, MatrixType, MatrixTypeItem, MatrixTypeRow} from '../types/common';
 import InitialValuesTable from './initial-values-table';
 import ResutlMatrixTable from './result-matrix-table';
+import { Tabs, Tab } from "react-bootstrap";
 
 const MainScreen = () => {
   let isTableExtended = useRef<boolean>(false);
@@ -142,8 +143,8 @@ const MainScreen = () => {
           if (element.id.toString() === id && propertyName) {
             return {
               ...element,
-              [propertyName]: parseFloat(value),
-              [`${propertyName}Left`]: parseFloat(value),
+              [propertyName]: !isNaN(Number(value)) ? parseFloat(value) : 0,
+              [`${propertyName}Left`]: !isNaN(Number(value)) ? parseFloat(value) : 0,
             };
           }
 
@@ -195,8 +196,7 @@ const MainScreen = () => {
     ]
   };
 
-  const getDeliveryItem = (rowIndex: number, columnIndex: number): MatrixTypeItem =>
-  {
+  const getDeliveryItem = (rowIndex: number, columnIndex: number): MatrixTypeItem => {
     return ({
       type: 'delivery',
       name: `D${rowIndex} - O${columnIndex}`,
@@ -509,19 +509,18 @@ const MainScreen = () => {
     return resultMatrixShallowCopy;
   }
 
-  const calculateDeltaParams = (resultMatrix: MatrixType): MatrixType => {
-    let resultMatrixShallowCopy = [...resultMatrix];
+  const calculateDeltaParams = (resultMatrix: MatrixType) => {
+    let resultMatrixShallowCopy = JSON.parse(JSON.stringify(resultMatrix));
 
     let resultMatrixShallowCopyFlat = resultMatrixShallowCopy.flat();
 
+    // @ts-ignore
     let filteredFlatResult = resultMatrixShallowCopyFlat.filter((resultMatrixShallowCopyFlatCell) => {
       if (resultMatrixShallowCopyFlatCell.type === 'delivery') {
         return resultMatrixShallowCopyFlatCell.resourcesTransferred === 0;
       }
       return false;
     })
-
-    console.log(filteredFlatResult);
 
     for (const filteredFlatResultItem of filteredFlatResult) {
       const { rowIndex: cellRowIndex, colIndex: cellColumnIndex, uniqueProfit } = filteredFlatResultItem;
@@ -539,7 +538,91 @@ const MainScreen = () => {
       resultMatrixShallowCopy[cellRowIndex][cellColumnIndex].deltaValue = uniqueProfit - alpha - beta;
     }
 
+    ///return resultMatrixShallowCopy;
+    // @ts-ignore
     return resultMatrixShallowCopy;
+  }
+
+  // @ts-ignore
+  const getIndexOfCorrectDiagonal = (rowOfCellsIncludesStartPoint, rowWithPossibleCorners) => {
+    let columnIndexOfDiagonal = null;
+
+    for (let i = 1; i < rowOfCellsIncludesStartPoint.length - 1; i++) {
+
+      // TODO iterate over rowWithPossibleCorners[k]
+      if (rowOfCellsIncludesStartPoint[i].deltaValue === 'X' && rowWithPossibleCorners[0][i].deltaValue === 'X') {
+        columnIndexOfDiagonal = i;
+      }
+    }
+
+    // hardcoded first one of first row
+    const rowIndexOfDiagonal = rowWithPossibleCorners[0][1].rowIndex;
+
+    return [rowIndexOfDiagonal, columnIndexOfDiagonal];
+  }
+
+  // @ts-ignore
+  const calculateRotateFigureCorners = (firstRotationCorner, resultMatrix) => {
+    let resultMatrixDeepCopy = JSON.parse(JSON.stringify(resultMatrix));
+    let rowOfCellsIncludesStartPoint = null;
+
+    const {rowIndex: rowFirstRotationCornerIndex, colIndex: columnFirstRotationCornerIndex} = firstRotationCorner;
+
+    // search all possible corners in firstRotationCorner column
+    // @ts-ignore
+    const rowWithPossibleCorners = resultMatrixDeepCopy.filter((resultMatrixShallowCopyRowItem, resultMatrixShallowCopyRowIndex) => {
+      if (resultMatrixShallowCopyRowIndex === rowFirstRotationCornerIndex) {
+        rowOfCellsIncludesStartPoint = resultMatrixShallowCopyRowItem;
+      } if (resultMatrixShallowCopyRowIndex !== rowFirstRotationCornerIndex && resultMatrixShallowCopyRowIndex !== 0) {
+        return resultMatrixShallowCopyRowItem[columnFirstRotationCornerIndex].deltaValue === 'X';
+      }
+      return false;
+    })
+
+    // TODO calculate two missing corners
+    const [rowIndexOfDiagonal, columnIndexOfDiagonal] = getIndexOfCorrectDiagonal(rowOfCellsIncludesStartPoint, rowWithPossibleCorners);
+
+    // @ts-ignore
+    const diagonalCorner = resultMatrixDeepCopy[rowIndexOfDiagonal][columnIndexOfDiagonal];
+
+    const missingRotationCorners = [
+      resultMatrixDeepCopy[rowIndexOfDiagonal][columnFirstRotationCornerIndex],
+      resultMatrixDeepCopy[rowFirstRotationCornerIndex][columnIndexOfDiagonal]
+    ]
+
+    return [
+        diagonalCorner,
+        ...missingRotationCorners
+    ];
+  }
+
+  // @ts-ignore
+  const getCornersToBeRotated = (resultMatrix: MatrixType, filteredFlatResultWithDeltaCalculated) => {
+    let resultMatrixShallowCopy = JSON.parse(JSON.stringify(resultMatrix));
+    let rotationCorners: any[] = [];
+
+    // @ts-ignore
+    const positiveDeltaElements = filteredFlatResultWithDeltaCalculated.filter((filteredFlatResultWithDeltaCalculatedItem) => {
+      return filteredFlatResultWithDeltaCalculatedItem.deltaValue > 0;
+    })
+
+    if (filteredFlatResultWithDeltaCalculated.length > 0) {
+
+      // iteration over all elements found
+      rotationCorners = [
+        ...rotationCorners,
+        positiveDeltaElements[0]
+      ];
+
+      const rotateFigureCorners = calculateRotateFigureCorners(rotationCorners[0], resultMatrixShallowCopy);
+
+      rotationCorners = [
+          ...rotationCorners,
+          ...rotateFigureCorners
+      ]
+    }
+
+    return rotationCorners;
   }
 
   useEffect(() => {
@@ -551,6 +634,7 @@ const MainScreen = () => {
 
     // calculate resources to be transferred on each track
     let sortedFlatSolutionMatrix = sortFlatSolutionMatrix(flatSolutionMatrix);
+
     resultMatrix.current = redistributeResources(sortedFlatSolutionMatrix);
 
     let sortedUniqueFlatMatrixCopyOnlyActiveTracks = sortedFlatSolutionMatrix.filter((sortedFlatSolutionMatrixCopyItem) => {
@@ -581,6 +665,7 @@ const MainScreen = () => {
     resultMatrix.current = addAlphaAndBetaParamsToMatrix(resultMatrix.current);
     resultMatrix.current = calcAlphaBeta(resultMatrix.current, sortedFlatSolutionMatrix);
 
+    // @ts-ignore
     resultMatrix.current = calculateDeltaParams(resultMatrix.current);
 
     setUniqueProfitMatrixData(resultMatrix.current);
@@ -589,18 +674,22 @@ const MainScreen = () => {
 
   return (
     <>
-      <h3 className="title mt-5 mb-1">Dane wejściowe</h3>
-      <InitialValuesTable
-        tableData={initialData}
-        onInputChange={onInputChange}
-        tableExtended={isTableExtended.current}
-      />
-      <h3 className="title mt-5mb-1">Macierz zysków jednostkowych</h3>
-      <ResutlMatrixTable
-        onInputChange={onInputChange}
-        tableData={uniqueProfitMatrixData}
-        tableExtended={isTableExtended.current}
-      />
+      <Tabs defaultActiveKey="initiValues" id="uncontrolled-tab-example" className="mt-3">
+        <Tab eventKey="initiValues" title="Dane wejściowe">
+          <InitialValuesTable
+              tableData={initialData}
+              onInputChange={onInputChange}
+              tableExtended={isTableExtended.current}
+          />
+        </Tab>
+        <Tab eventKey="result" title="Rezultat">
+          <ResutlMatrixTable
+              onInputChange={onInputChange}
+              tableData={uniqueProfitMatrixData}
+              tableExtended={isTableExtended.current}
+          />
+        </Tab>
+      </Tabs>
     </>
   );
 };

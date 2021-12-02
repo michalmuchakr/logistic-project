@@ -64,15 +64,8 @@ td.cell {
 }
 
 .table__unit-matrix .cell.contain-name-cell {
-  position: static;
-  padding-top: 8px !important;
   vertical-align: middle;
   min-width: 50px;
-}
-
-.table__unit-matrix .cell.contain-name-cell .cell-title {
-  position: static;
-  border-bottom: 0;
 }
 
 .table-extended td.cell {
@@ -96,4 +89,18 @@ td.cell {
 
 .input-group:last-child {
   margin-bottom: 0 !important;
+}
+
+td.cell.contain-name-cell.presentation-alpha-cell {
+  padding-top: 8px !important;
+}
+td.cell.contain-name-cell.presentation-alpha-cell .cell-title {
+  position: static;
+  border: 0;
+}
+.navbar-brand {
+  padding-left: 19px;
+}
+tr:last-child td.cell.contain-name-cell:last-child {
+  display: none;
 }

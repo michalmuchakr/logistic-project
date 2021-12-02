@@ -7,7 +7,7 @@ const InitialValuesTable = ({
   onInputChange,
 }: TableType): JSX.Element => {
   return (
-    <Table className="mt-4">
+    <Table className="mt-3">
       <tbody>
         {tableData &&
           tableData.map((rowItem, rowIdx) => (

@@ -9,7 +9,7 @@ const ResultMatrixTable = ({
 }: TableType): JSX.Element => {
   return (
     <Table
-      className={`table__unit-matrix mt-4${tableExtended && ' table-extended'}`}
+      className={`table__unit-matrix mt-3${tableExtended && ' table-extended'}`}
     >
       <tbody>
         {tableData &&
